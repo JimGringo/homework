@@ -1,13 +1,14 @@
 import os
 import sys
 import random
-from queue import SimpleQueue
+from queue import Queue
 
 class SSES():
     def __init__(self, fileLoc):
         self.fileLoc = fileLoc
         self.iaRand = random.Random(1)
         self.uniRand = random.Random(2)
+        self.serviceRand = random.Random(3)
         self.sim_clock = 0.0
         self.SERVER_IDLE = 0
         self.SERVER_BUSY = 1
@@ -30,21 +31,37 @@ class SSES():
         self.time_last_event = 0.0
         self.arrival_times = list()
         self.event_list = list()
+        self.triageAQ = Queue(maxsize=self.triageServers)
+        self.traumaAQ = Queue(maxsize=self.traumaServers)
+        self.acuteAQ = Queue(maxsize=self.acuteServers)
+        self.promptAQ = Queue(maxsize=self.promptServers)
+        self.triageDQ = Queue(maxsize=self.triageServers)
+        self.traumaDQ = Queue(maxsize=self.traumaServers)
+        self.acuteDQ = Queue(maxsize=self.acuteServers)
+        self.promptDQ = Queue(maxsize=self.promptServers)
         self.parseFile()
+
         print(self.triageIAMean)
-        self.event_list.append(self.iaRandom(self.triageIAMean))
-        self.event_list.append(float('inf'))
-        self.event_list.append(self.simStopTime)
+        self.triageAQ.put(self.iaRandom(self.triageIAMean))
+        self.triageDQ.put(float('inf'))
         self.EVENT_ARRIVAL = 0
         self.EVENT_DEPARTURE = 1
         self.EVENT_END = 2
         
 
     def arrivalTriage(self):
-        self.event_list[self.EVENT_ARRIVAL] = self.sim_clock + self.iaRandom(self.triageIAMean)
+        self.triageAQ.put(self.sim_clock + self.iaRandom(self.triageIAMean))
+
+        self.triageDQ.put(self.sim_clock + self.serviceRandom(self.triageServiceMean))
+        if (self.triageAQ.full() == True):
+            self.server_state = self.SERVER_BUSY
+            
     
     def iaRandom(self, mean):
         return self.iaRand.expovariate(1/mean)
+    
+    def serviceRandom(self, mean):
+        return self.serviceRand.expovariate(1/mean)
     
     def start(self):
         print("Thinking...")
@@ -92,8 +109,20 @@ class SSES():
         except FileNotFoundError:
             print("whoops")
             sys.exit(1)
-
-debugmode = 0
+    
+    def triageList(self):
+        return
+    
+    def traumaList(self):
+        return
+    
+    def acuteList(self):
+        return
+    
+    def promptList(self):
+        return
+    
+debugmode = 1
 if (debugmode == 0):
     if len(sys.argv) != 1:
         print("Command Line Error, 2 arguements required")
